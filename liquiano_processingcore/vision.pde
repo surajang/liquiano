@@ -15,9 +15,7 @@ void getVision() {
   if (video.available()) {
     video.read();
     //image(video, 0, 0, 160, 120); // Draw the webcam video onto the screen
-
-    int brightestX = 0; // X-coordinate of the brightest video pixel
-    int brightestY = 0; // Y-coordinate of the brightest video pixel
+    
     float brightestValue = 0; // Brightness of the brightest video pixel
     // Search for the brightest pixel: For each row of pixels in the video image and
     // for each pixel in the yth row, compute each pixel's index in the video
@@ -34,14 +32,13 @@ void getVision() {
         if (pixelBrightness > brightestValue) {
           brightestValue = pixelBrightness;
           brightestY = y;
-          brightestX = x;
+          brightestX = x * 2;
         }
         index++;
       }
     }
-    // Draw a large, yellow circle at the brightest pixel
-    //fill(255, 204, 0, 128);
-    rect(brightestX, 0, 50, 480);
+  println("brightestX: ", brightestX);
+    
 
   }
 }

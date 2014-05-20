@@ -10,14 +10,15 @@
 import arb.soundcipher.*;
 int dimX = 640;
 int dimY = 200;
-float pitchBend = mouseX * 0.25;
-float velocity = mouseY * 2.55;
+
+    int brightestX = 0; // X-coordinate of the brightest video pixel
+    int brightestY = 0; // Y-coordinate of the brightest video pixel
   
 SoundCipher sc = new SoundCipher(this);
 
 void setup() {
   size(dimX, dimY);
-  video = new Capture(this, 160, 120);
+  video = new Capture(this, 320, 240);
   video.start();  
   noStroke();
   smooth();
@@ -29,11 +30,16 @@ void draw() {
   line(0, dimY-5, dimX, dimY-5);
   stroke(0);
   //rect(mouseX-5, mouseY-5, 10, 10); 
-  
+  fill(255);
   text("Vel", 600, 100);
-  text("- <-Pitch-> +", 320, 200);
-  getVision();  //Call vision processing module
-  set(0,0, video); //Show cheat video
+  text("- <-Pitch-> +", 280, 190);
+  getVision();  //Call vision processing module @vision.pde
+  //set(240,40, video); //Show video source
+  image(video, 240, 40, 160, 120); // Draw the webcam video onto the screen
+  // Draw a large, yellow circle at the brightest pixel
+  noStroke();
+  fill(255, 204, 0, 128);
+  rect(brightestX, 0, 50, 480);
 }
 
 void mousePressed() {
@@ -52,7 +58,7 @@ void mousePressed() {
 
 void mouseDragged() {
   float pitchBend = mouseX * 0.25;
-  float velocity = mouseY * 2.55;
+  float velocity = mouseY * 0.635;
   sc.sendMidi(sc.PITCH_BEND, 1, 64, pitchBend);
   //sc.sendMidi(160, 0, 60, pitchBend);
   sc.sendMidi(sc.CONTROL_CHANGE, 1, 7, velocity);
