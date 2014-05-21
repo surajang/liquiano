@@ -7,12 +7,14 @@
 * Liquiano project by Jisoon Lim, Minshik Sohn
 */
 
+//Required Libraries!!!
 import arb.soundcipher.*;
+
+//Required Global Variables!!!
 int dimX = 640;
 int dimY = 200;
-
-    int brightestX = 0; // X-coordinate of the brightest video pixel
-    int brightestY = 0; // Y-coordinate of the brightest video pixel
+int brightestX = 0; // X-coordinate of the brightest video pixel
+int brightestY = 0; // Y-coordinate of the brightest video pixel
   
 SoundCipher sc = new SoundCipher(this);
 

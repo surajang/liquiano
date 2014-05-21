@@ -42,7 +42,3 @@ void getVision() {
 
   }
 }
-
-/*void captureEvent(Capture c) {
-  c.read();
-} */
