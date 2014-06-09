@@ -285,12 +285,13 @@ Full-Width Styles
 }
 
 #header_wrap {
-  background: #212121;
+  background: url('../images/header_bg.jpg') #212121 no-repeat 50% 50%;
+/*  background: #212121;
   background: -moz-linear-gradient(top, #373737, #212121);
   background: -webkit-linear-gradient(top, #373737, #212121);
   background: -ms-linear-gradient(top, #373737, #212121);
   background: -o-linear-gradient(top, #373737, #212121);
-  background: linear-gradient(top, #373737, #212121);
+  background: linear-gradient(top, #373737, #212121); */
 }
 
 #header_wrap .inner {
@@ -352,6 +353,10 @@ Full-Width Styles
   background: url(../images/sprite_download.png) no-repeat top right;
 }
 
+.inlineimg {
+  width: 640px;
+}
+
 #main_content_wrap {
   background: #f2f2f2;
   border-top: 1px solid #111;
@@ -363,7 +368,7 @@ Full-Width Styles
 }
 
 #footer_wrap {
-  background: #212121;
+  background: #747474;
 }
 
 
