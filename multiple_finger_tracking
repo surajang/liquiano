@@ -1,0 +1,286 @@
+import processing.video.*;
+Capture video;
+
+int sizeX = 640;
+int sizeY = 480;
+
+int maximumFingerWidth = 100;
+int minimumFingerWidth = 5;
+int depthScanSpacing = 2;
+int fingerColorThreshold = 80;
+int maximumNumberOfNotes = 10;
+int maxFingerSteer = 30;
+int maximumInterFingerDisplacement = 50;
+int maxNumberOfFinger = 10;
+
+int waterSurfaceLocation;
+
+int scanWidthFrom = 0;
+int scanWidthTo = 640;
+int scanDepthFrom = 0;
+int scanDepthTo = 480;
+
+Finger[] fingers;
+Note[] notes;
+
+class Note
+{
+  int pitch;
+  int volume;
+  int noteOn;
+  int newNote;
+  
+  // Constructor
+  Note(int pitchTemp, int volumeTemp, int noteOnTemp, int newNoteTemp)
+  {
+    pitch = pitchTemp;
+    volume = volumeTemp;
+    noteOn = noteOnTemp;
+    newNote = newNoteTemp;
+  }
+  
+  void updateNoteInfo(int xLocation, int yDepth)
+  {
+    
+  }
+  
+  void setNoteOn(int xLocation, int yDepth)
+  {
+    
+  }
+  
+  void setNoteOff()
+  {
+    pitch = 0;
+    volume = 0;
+    noteOn = 0;
+    newNote = 0;
+  }
+}
+
+class Finger
+{
+  int xLocation;
+  int xLocationPrevious;
+  int yDepth;
+  int yDepthPrevious;
+  int fingerOn;
+  
+  // Constructor
+  Finger(int xLTemp, int xLPTemp, int yDTemp, int yDPTemp, int fingerOnTemp)
+  {
+    xLocation = xLTemp;
+    xLocationPrevious = xLPTemp;
+    yDepth = yDTemp;
+    yDepthPrevious = yDPTemp;
+    fingerOn = fingerOnTemp;
+  }
+  
+  void updateFingerInfo(int xLocationTemp, int yDepthTemp, int fingerOnTemp)
+  {
+    xLocation = xLocationTemp;
+    yDepth = yDepthTemp;
+    fingerOn = fingerOnTemp;
+  }
+  
+  void initializeFinger()
+  {
+    xLocation = 0;
+    xLocationPrevious = 0;
+    yDepth = 0;
+    yDepthPrevious = 0;
+    fingerOn = 0;
+  }
+  
+  int getFingerOn()       {  return fingerOn;           }
+  int getXLocation()      {  return xLocation;          }
+  int getXLocationPrev()  {  return xLocationPrevious;  }
+  int getYDepth()         {  return yDepth;             }
+  int getYDepthPrev()     {  return yDepthPrevious;     }
+}
+
+
+
+void setup() 
+{
+  size(sizeX, sizeY);
+  // Uses the default video input, see the reference if this causes an error
+  video = new Capture(this, width, height);
+  video.start();  
+  noStroke();
+  smooth();
+  
+  fingers = new Finger[maxNumberOfFinger];
+  notes   = new Note[maxNumberOfFinger]; // The maximum number of note is same as one of finger.
+  
+  for (int i = 0; i < maxNumberOfFinger; i++)
+  {
+    fingers[i] = new Finger(0, 0, 0, 0, 0);
+    notes[i]   = new Note(0, 0, 0, 0);
+  }
+}
+
+
+// Proposition 1 : Finger information is processed within one frame
+// Proposition 2 : Note information is processed with multiple frame information within time frame 
+
+void draw() 
+{
+  int fingerRecognitionCounter = 0;
+  int tempFingerCenterLocationX = 0;
+  int tempFingerCenterLocationFrom, tempFingerCenterLocationTo;
+  int tempFingerCenterLocationY;
+
+  if (video.available()) 
+  {
+    video.read();
+    image(video, 0, 0, width, height); // Draw the webcam video onto the screen
+    video.loadPixels();
+    
+    int pixelIndex = 0;
+     
+    tempFingerCenterLocationX = 0;
+    tempFingerCenterLocationFrom = 0;
+    tempFingerCenterLocationTo = 0;
+    tempFingerCenterLocationY = 0;
+    
+    int newFingerIndex = 0;
+    int prevY = 0;
+    
+
+    for ( int i = 0; i < maxNumberOfFinger; i++ )
+    {
+      fingers[i].initializeFinger();
+    }
+    
+    // Main loop for pixel scanning
+    // Loop for Y-axis depth scan
+    for ( int y = 0; y < sizeY; y++ ) 
+    {
+      fingerRecognitionCounter = 0;
+
+      // Jump the depth scan spacing
+      if ( (y - prevY) < depthScanSpacing && y != 0 ) 
+      { 
+        pixelIndex = pixelIndex + sizeX; 
+        continue;   
+      }
+      else                                            
+      { 
+        prevY = y;  
+      }
+      
+      for ( int x = 0; x < sizeX; x++ ) 
+      {
+        // Loop for X-axis finger recognition, only within the scan depth range
+        if ( y >= scanDepthFrom && y <= scanDepthTo && x >= scanWidthFrom && x <= scanWidthTo )
+        {
+          int pixelValue = video.pixels[pixelIndex];
+          float pixelBrightness = brightness(pixelValue);
+          
+          // Scan for darker region for finger recognition
+          if (pixelBrightness < fingerColorThreshold) 
+          {
+            if ( fingerRecognitionCounter == 0 )
+            {
+              tempFingerCenterLocationFrom = x;
+            }
+            fingerRecognitionCounter++;
+          }
+          
+          else 
+          {
+            // Process the finger region
+            if ( fingerRecognitionCounter >= minimumFingerWidth )
+            {
+              int fingerExist = 0;
+              int xDisplacementTemp = 1000; // Arbitrary big value 
+              int xDisplacement = 0;
+              int closestIndex = 0;
+              
+              tempFingerCenterLocationTo = x;
+              tempFingerCenterLocationX = (tempFingerCenterLocationFrom + tempFingerCenterLocationTo) / 2;
+              tempFingerCenterLocationY = y;
+              
+              // Add new finger based on the difference between current depth scan data and previous one
+              for ( int i = 0; i < maxNumberOfFinger; i++ )
+              {
+                if ( 1 == fingers[i].getFingerOn() )
+                {
+                  fingerExist = 1;
+                  
+                  xDisplacement = abs(tempFingerCenterLocationX - fingers[i].getXLocation());
+                  
+                  // Find the closest finger note index recognized on previous depth
+                  if ( xDisplacement < xDisplacementTemp )
+                  {
+                    xDisplacementTemp = xDisplacement;
+                    closestIndex = i;
+                  }
+                }
+              }
+              
+              // Update the finger note information which is adjacent to previous depth note
+              if ( fingerExist == 1 && xDisplacementTemp < maxFingerSteer )
+              {
+                fingers[closestIndex].updateFingerInfo(tempFingerCenterLocationX, y, 1);
+              }
+              // Create new finger note information which is not adjacent to previous depth note
+              else if ( fingerExist == 1 && xDisplacementTemp > maxFingerSteer && newFingerIndex < maxNumberOfFinger)
+              {
+                fingers[newFingerIndex].updateFingerInfo(tempFingerCenterLocationX, y, 1);
+                
+                if ( ( y - scanDepthFrom ) < depthScanSpacing )
+                {
+                  newFingerIndex++;
+                }
+              }
+              // Create new finger note for the first time
+              else if ( fingerExist != 1 )
+              {
+                fingers[newFingerIndex].updateFingerInfo(tempFingerCenterLocationX, y, 1);
+                
+                if ( ( y - scanDepthFrom ) < depthScanSpacing )
+                {
+                  newFingerIndex++;
+                }
+              }
+            }
+            
+            fingerRecognitionCounter = 0;
+          }
+        }
+        
+        pixelIndex++;
+        
+      // End of single y depth scanning process
+      }
+      
+    // End of a frame process
+    }
+    
+    // Compare the notes recognized in current frame with the ones in previous frame
+    // Discriminate new notes, updated notes, and notes disappeared.
+    
+    // Play the MIDI sound with SoundCipher library
+    
+    // Draw a yellow circles at recognized fingertips 
+    fill(255, 204, 0, 128);
+    
+    for ( int i = 0; i < maxNumberOfFinger; i++ )
+    {
+      if ( 1 == fingers[i].getFingerOn() )
+      {
+        ellipse(fingers[i].getXLocation(), fingers[i].getYDepth(), 50, 50);
+      }
+    }
+    
+    // For frame rate checking
+    float m = millis();
+    print("time : ");
+    print(m);
+    print(",   X : ");
+    println(tempFingerCenterLocationX);
+  }
+  
+}
